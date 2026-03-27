@@ -1,37 +1,80 @@
-// required modules
+const express = require("express");
 const fs = require("fs");
-const path = require("path");
+const cors = require("cors");
 
-console.log("running the app  ...");
+const app = express();
+const PORT = 3000;
 
-// Step 1: Read 'students.json' using fs.readFileSync
-// Pass 'utf-8' as the second argument so you get a text string, not raw binary
-// const studentsData = fs.readFileSync(???, 'utf-8');
+app.use(express.json());
+app.use(cors());
 
-// Step 2: Parse the JSON string into a JavaScript array
-// const students = JSON.parse(???);
+let students = JSON.parse(fs.readFileSync("students.json", "utf-8"));
 
-// Step 3: Start building your Markdown string
-// Add a title, the current date, and a summary showing the total number of students
-// let markdownContent = '# Student Report\n\n';
-// markdownContent += `Generated on: ${???}\n\n`;
-// markdownContent += `## Summary\n\nTotal Students: ${???}\n\n`;
+app.get("/students", (req, res) => {
+  res.status(200).json(students);
+});
 
-// Step 4: Loop over the students and append each one's details to markdownContent
-// students.forEach((student) => {
-//   markdownContent += `### ${student.???}\n`;
-//   markdownContent += `- **Email:** ${student.???}\n`;
-//   markdownContent += `- **Major:** ${student.???}\n`;
-//   markdownContent += `- **GPA:** ${student.???}\n`;
-//   markdownContent += `- **ID:** ${student.???}\n\n`;
-// });
+app.get("/students/:id", (req, res) => {
+  const student = students.find((s) => s.id === parseInt(req.params.id));
 
-// Step 5: Build the output path using path.join and __dirname
-// __dirname always points to the folder where this script lives
-// const outputPath = path.join(__dirname, 'student_report.md');
+  if (!student) {
+    return res.status(404).json({ error: "Student not found" });
+  }
 
-// Step 6: Write your Markdown string to the output file
-// fs.writeFileSync(outputPath, markdownContent, 'utf-8');
+  res.status(200).json(student);
+});
 
-// Step 7: Confirm it worked
-// console.log(`Report generated: ${outputPath}`);
+app.post("/students", (req, res) => {
+  const { name, email, major, gpa } = req.body;
+
+  if (!name || !email || !major || gpa === undefined) {
+    return res.status(400).json({ error: "All fields are required: name, email, major, gpa" });
+  }
+
+  const newStudent = {
+    id: students.length + 1,
+    name,
+    email,
+    major,
+    gpa,
+  };
+
+  students.push(newStudent);
+  res.status(201).json(newStudent);
+});
+
+app.put("/students/:id", (req, res) => {
+  const index = students.findIndex((s) => s.id === parseInt(req.params.id));
+
+  if (index === -1) {
+    return res.status(404).json({ error: "Student not found" });
+  }
+
+  const { name, email, major, gpa } = req.body;
+
+  if (!name || !email || !major || gpa === undefined) {
+    return res.status(400).json({ error: "All fields are required: name, email, major, gpa" });
+  }
+
+  students[index] = { id: students[index].id, name, email, major, gpa };
+  res.status(200).json(students[index]);
+});
+
+app.delete("/students/:id", (req, res) => {
+  const index = students.findIndex((s) => s.id === parseInt(req.params.id));
+
+  if (index === -1) {
+    return res.status(404).json({ error: "Student not found" });
+  }
+
+  const deleted = students.splice(index, 1);
+  res.status(200).json(deleted[0]);
+});
+
+app.use((req, res) => {
+  res.status(404).json({ error: "Route not found" });
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
