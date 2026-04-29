@@ -4,8 +4,11 @@ const getAllStudents = () => students;
 
 const getStudentById = (id) => students.find((s) => s.id === id);
 
+const nextId = () =>
+  students.length === 0 ? 1 : Math.max(...students.map((s) => s.id)) + 1;
+
 const createStudent = ({ name, email, major, gpa }) => {
-  const newStudent = { id: students.length + 1, name, email, major, gpa };
+  const newStudent = { id: nextId(), name, email, major, gpa };
   students.push(newStudent);
   return newStudent;
 };
